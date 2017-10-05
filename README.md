@@ -18,8 +18,8 @@ this relation.
 
 ### Line Graph Example
 
-![alt text](https://github.com/bristola/DatabaseGrapher/ExampleOutput/LineGraph.png "Line Graph")
+![alt text](https://github.com/bristola/DatabaseGrapher/blob/master/ExampleOutput/LineGraph.PNG "Line Graph")
 
 ### Bar Graph Example
 
-![alt text](https://github.com/bristola/DatabaseGrapher/ExampleOutput/BarGraph.png "Bar Graph")
+![alt text](https://github.com/bristola/DatabaseGrapher/blob/master/ExampleOutput/BarGraph.PNG "Bar Graph")
