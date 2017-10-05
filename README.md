@@ -10,6 +10,14 @@ create a line graph or a bar graph. The bar graph option detects foreign key
 relationships between tables, and can group statistics by multiple tables using
 this relation.
 
+There has been supplied an demo sqlite3 database called *MLBData.sqlite3* that
+can be used to test the program. Also, the *sqlite-jdbc-3.16.1.jar* JAR file is
+required to run the program. This is also included in the repository in order
+to allow the execution of the program. This JAR is from the downloads page of
+the repository https://bitbucket.org/xerial/sqlite-jdbc. You must have this
+included on your class path. You can either download it yourself or use the
+supplied version of the jar file.
+
 ## Execution
 
   1. Traverse to the project's root directory
