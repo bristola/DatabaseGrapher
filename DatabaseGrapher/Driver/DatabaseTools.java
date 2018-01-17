@@ -43,7 +43,9 @@ public class DatabaseTools {
 
     }
 
-    public ArrayList<String> getColumns(Statement statement, String tableName) throws SQLException {
+    public ArrayList<String> getColumns(Connection conn, String tableName) throws SQLException {
+
+        Statement statement = getStatement(conn);
 
         // Displays all columns in table and gets input from user
         ResultSet rs1 = statement.executeQuery("SELECT * FROM "+tableName+" LIMIT 1");
@@ -61,7 +63,9 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getData(int x_axis, int y_axis, Statement statement, String tableName, ArrayList<String> valid_columns) throws SQLException {
+    public Object[][] getData(int x_axis, int y_axis, Connection conn, String tableName, ArrayList<String> valid_columns) throws SQLException {
+
+        Statement statement = getStatement(conn);
 
         ResultSet rs = statement.executeQuery("SELECT COUNT(*) AS total FROM "+tableName);
         int count = rs.getInt("total");
@@ -119,7 +123,9 @@ public class DatabaseTools {
         return relations;
     }
 
-    public ArrayList<String> getTableForeignColumns(ArrayList<String> relations, Statement statement) throws SQLException {
+    public ArrayList<String> getTableForeignColumns(ArrayList<String> relations, Connection conn) throws SQLException {
+
+        Statement statement = getStatement(conn);
 
         ArrayList<String> foreignColumns = new ArrayList<String>();
 
@@ -144,7 +150,9 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getForeignData(Connection conn, Statement statement, ArrayList<String> foreignColumns, String tableName, int index) throws SQLException{
+    public Object[][] getForeignData(Connection conn, ArrayList<String> foreignColumns, String tableName, int index) throws SQLException {
+
+        Statement statement = getStatement(conn);
 
         Object[][] data;
 
@@ -167,7 +175,9 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getBarData(Connection conn, Statement statement, ArrayList<String> tableColumns, int index, String tableName) throws SQLException {
+    public Object[][] getBarData(Connection conn, ArrayList<String> tableColumns, int index, String tableName) throws SQLException {
+
+        Statement statement = getStatement(conn);
 
         Object[][] data;
 

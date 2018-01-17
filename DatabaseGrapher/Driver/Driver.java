@@ -31,7 +31,6 @@ public class Driver {
             }
 
             Connection conn = du.getConnection(input1, databases);
-            Statement statement = du.getStatement(conn);
 
             ArrayList<String> tables = du.getTables(conn);
             printList(tables, "There are no tables to connect to!");
@@ -44,7 +43,7 @@ public class Driver {
 
             switch(input3) {
                 case 1:
-                    ArrayList<String> columns = du.getColumns(statement, tables.get(input2-1));
+                    ArrayList<String> columns = du.getColumns(conn, tables.get(input2-1));
 
                     printList(columns, "There are no columns in the specified table!");
                     int x_axis = getInput(columns.size(), "Which column would you like to be on the x-axis?");
@@ -53,20 +52,20 @@ public class Driver {
                         return;
                     }
 
-                    Object[][] data = du.getData(x_axis, y_axis, statement, tables.get(input2 - 1), columns);
+                    Object[][] data = du.getData(x_axis, y_axis, conn, tables.get(input2 - 1), columns);
                     createLineGraph(data, x_axis, y_axis, databases.get(input1-1), columns);
                     break;
 
                 case 2:
                     ArrayList<String> relations = du.getRelations(conn, tables.get(input2-1), tables);
-                    ArrayList<String> columns2 = du.getColumns(statement, tables.get(input2-1));
-                    ArrayList<String> foreignColumns = du.getTableForeignColumns(relations, statement);
+                    ArrayList<String> columns2 = du.getColumns(conn, tables.get(input2-1));
+                    ArrayList<String> foreignColumns = du.getTableForeignColumns(relations, conn);
                     printList(columns2, foreignColumns, "There are no columns for the specified table and its relations!");
                     int barInput = getInput(columns2.size()+foreignColumns.size(), "Which value would you like to graph?");
                     if (barInput == -1) {
                         return;
                     }
-                    Object[][] data2 = barInput >= columns2.size() ? du.getForeignData(conn, statement, foreignColumns, tables.get(input2-1), barInput-1-columns2.size()) : du.getBarData(conn, statement, columns2, barInput-1, tables.get(input2-1));
+                    Object[][] data2 = barInput >= columns2.size() ? du.getForeignData(conn, foreignColumns, tables.get(input2-1), barInput-1-columns2.size()) : du.getBarData(conn, columns2, barInput-1, tables.get(input2-1));
                     String yAxis = barInput >= columns2.size() ? foreignColumns.get(barInput-1-columns2.size()).split(" ")[1] : columns2.get(barInput-1);
                     ArrayList<String> keys = du.getPrimaryKeys(conn, tables.get(input2 - 1));
                     createBarGraph(tables.get(input2-1), yAxis, keys.get(0), data2);
