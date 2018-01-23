@@ -4,6 +4,7 @@ import java.util.Scanner;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -23,7 +24,7 @@ public class Driver {
 
         try {
 
-            ArrayList<String> databases = getDatabases();
+            List<String> databases = getDatabases();
             printList(databases, "There are no databases to connect to!");
             int input1 = getInput(databases.size(), "What database would you like to connect to?");
             if (input1 == -1) {
@@ -32,7 +33,7 @@ public class Driver {
 
             Connection conn = du.getConnection(input1, databases);
 
-            ArrayList<String> tables = du.getTables(conn);
+            List<String> tables = du.getTables(conn);
             printList(tables, "There are no tables to connect to!");
             int input2 = getInput(tables.size(), "Which table would you like to connect to?");
             if (input2 == -1) {
@@ -43,32 +44,10 @@ public class Driver {
 
             switch(input3) {
                 case 1:
-                    ArrayList<String> columns = du.getColumns(conn, tables.get(input2-1));
-
-                    printList(columns, "There are no columns in the specified table!");
-                    int x_axis = getInput(columns.size(), "Which column would you like to be on the x-axis?");
-                    int y_axis = getInput(columns.size(), "Which column would you like to be on the y-axis?");
-                    if (x_axis == -1 || y_axis == -1) {
-                        return;
-                    }
-
-                    Object[][] data = du.getData(x_axis, y_axis, conn, tables.get(input2 - 1), columns);
-                    createLineGraph(data, x_axis, y_axis, databases.get(input1-1), columns);
+                    executeLineGraph(conn, tables, input2, databases.get(input1-1));
                     break;
-
                 case 2:
-                    ArrayList<String> relations = du.getRelations(conn, tables.get(input2-1), tables);
-                    ArrayList<String> columns2 = du.getColumns(conn, tables.get(input2-1));
-                    ArrayList<String> foreignColumns = du.getTableForeignColumns(relations, conn);
-                    printList(columns2, foreignColumns, "There are no columns for the specified table and its relations!");
-                    int barInput = getInput(columns2.size()+foreignColumns.size(), "Which value would you like to graph?");
-                    if (barInput == -1) {
-                        return;
-                    }
-                    Object[][] data2 = barInput >= columns2.size() ? du.getForeignData(conn, foreignColumns, tables.get(input2-1), barInput-1-columns2.size()) : du.getBarData(conn, columns2, barInput-1, tables.get(input2-1));
-                    String yAxis = barInput >= columns2.size() ? foreignColumns.get(barInput-1-columns2.size()).split(" ")[1] : columns2.get(barInput-1);
-                    ArrayList<String> keys = du.getPrimaryKeys(conn, tables.get(input2 - 1));
-                    createBarGraph(tables.get(input2-1), yAxis, keys.get(0), data2);
+                    executeBarGraph(conn, tables, input2);
                     break;
                 default:
                     System.out.println("Invalid graph type");
@@ -86,12 +65,68 @@ public class Driver {
         }
     }
 
-    public ArrayList<String> getDatabases() {
+    public void executeLineGraph(Connection conn, List<String> tables, int input2, String title) {
+
+        DatabaseTools du = new DatabaseTools();
+
+        try {
+            List<String> columns = du.getColumns(conn, tables.get(input2-1));
+
+            printList(columns, "There are no columns in the specified table!");
+            int x_axis = getInput(columns.size(), "Which column would you like to be on the x-axis?");
+            int y_axis = getInput(columns.size(), "Which column would you like to be on the y-axis?");
+            if (x_axis == -1 || y_axis == -1) {
+                return;
+            }
+
+            Object[][] data = du.getData(conn, tables.get(input2 - 1), columns.get(x_axis-1), columns.get(y_axis-1));
+            createLineGraph(data, x_axis, y_axis, title, columns);
+        } catch(SQLException e) {
+            System.out.println("An error has occured while connecting!\nExiting program!");
+            e.printStackTrace();
+            return;
+        } catch(Exception e) {
+            System.out.println("An error has occured");
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    public void executeBarGraph(Connection conn, List<String> tables, int input2) {
+
+        DatabaseTools du = new DatabaseTools();
+
+        try {
+            List<String> relations = du.getRelations(conn, tables.get(input2-1), tables);
+            List<String> columns2 = du.getColumns(conn, tables.get(input2-1));
+            List<String> foreignColumns = du.getTableForeignColumns(conn, relations);
+            printList(columns2, foreignColumns, "There are no columns for the specified table and its relations!");
+            int barInput = getInput(columns2.size()+foreignColumns.size(), "Which value would you like to graph?");
+            if (barInput == -1) {
+                return;
+            }
+            Object[][] data2 = barInput >= columns2.size() ? du.getForeignData(conn, tables.get(input2-1), foreignColumns.get(barInput-1-columns2.size())) : du.getBarData(conn, tables.get(input2-1),columns2.get(barInput-1));
+            String yAxis = barInput >= columns2.size() ? foreignColumns.get(barInput-1-columns2.size()).split(" ")[1] : columns2.get(barInput-1);
+            List<String> keys = du.getPrimaryKeys(conn, tables.get(input2 - 1));
+            createBarGraph(tables.get(input2-1), yAxis, keys.get(0), data2);
+        } catch(SQLException e) {
+            System.out.println("An error has occured while connecting!\nExiting program!");
+            e.printStackTrace();
+            return;
+        } catch(Exception e) {
+            System.out.println("An error has occured");
+            e.printStackTrace();
+            return;
+        }
+
+    }
+
+    public List<String> getDatabases() {
 
         // Gets all files in current directory
         File folder = new File("Databases/");
         File[] files = folder.listFiles();
-        ArrayList<String> databases = new ArrayList<String>();
+        List<String> databases = new ArrayList<String>();
 
         for (int i = 0; i < files.length; i++) {
           String[] name = files[i].getName().split("\\.");
@@ -104,7 +139,7 @@ public class Driver {
 
     }
 
-    public void printList(ArrayList<String> lists, String errorMessage) {
+    public void printList(List<String> lists, String errorMessage) {
 
         System.out.println("\n\n");
 
@@ -119,7 +154,7 @@ public class Driver {
 
     }
 
-    public void printList(ArrayList<String> list1, ArrayList<String> list2, String errorMessage) {
+    public void printList(List<String> list1, List<String> list2, String errorMessage) {
 
         System.out.println("\n\n");
 
@@ -153,7 +188,7 @@ public class Driver {
         return Integer.parseInt(input);
     }
 
-    public void createLineGraph(Object[][] data, int x_axis, int y_axis, String title, ArrayList<String> valid_columns) throws SQLException{
+    public void createLineGraph(Object[][] data, int x_axis, int y_axis, String title, List<String> valid_columns) throws SQLException{
 
         Scanner scan = new Scanner(System.in);
 

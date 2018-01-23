@@ -2,6 +2,7 @@ package DatabaseGrapher.Driver;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -13,7 +14,7 @@ import java.util.Iterator;
 
 public class DatabaseTools {
 
-    public Connection getConnection(int input, ArrayList<String> databases) throws SQLException {
+    public Connection getConnection(int input, List<String> databases) throws SQLException {
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:Databases/"+databases.get(input-1));
         System.out.println("Connection Established!\n\n");
@@ -29,11 +30,11 @@ public class DatabaseTools {
 
     }
 
-    public ArrayList<String> getTables(Connection conn) throws SQLException {
+    public List<String> getTables(Connection conn) throws SQLException {
 
         DatabaseMetaData md = conn.getMetaData();
         ResultSet rs = md.getTables(null, null, "%", null);
-        ArrayList<String> tables = new ArrayList<String>();
+        List<String> tables = new ArrayList<String>();
 
         while (rs.next()) {
             tables.add(rs.getString(3));
@@ -43,14 +44,14 @@ public class DatabaseTools {
 
     }
 
-    public ArrayList<String> getColumns(Connection conn, String tableName) throws SQLException {
+    public List<String> getColumns(Connection conn, String tableName) throws SQLException {
 
         Statement statement = getStatement(conn);
 
         // Displays all columns in table and gets input from user
         ResultSet rs1 = statement.executeQuery("SELECT * FROM "+tableName+" LIMIT 1");
         ResultSetMetaData rsmd = rs1.getMetaData();
-        ArrayList<String> valid_columns = new ArrayList<String>();
+        List<String> valid_columns = new ArrayList<String>();
         // Makes sure that the column is a number
         for (int i = 1; i <= rsmd.getColumnCount(); i++) {
           if (rsmd.getColumnType(i) == 3 || rsmd.getColumnType(i) == 4) { // It is a number type
@@ -63,7 +64,7 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getData(int x_axis, int y_axis, Connection conn, String tableName, ArrayList<String> valid_columns) throws SQLException {
+    public Object[][] getData(Connection conn, String tableName, String x_column, String y_column) throws SQLException {
 
         Statement statement = getStatement(conn);
 
@@ -71,11 +72,11 @@ public class DatabaseTools {
         int count = rs.getInt("total");
         Object[][] data = new Object[count][2];
 
-        rs =statement.executeQuery("SELECT "+valid_columns.get(x_axis - 1)+", "+valid_columns.get(y_axis-1)+" FROM "+tableName+" ORDER BY "+valid_columns.get(x_axis - 1));
+        rs =statement.executeQuery("SELECT "+x_column+", "+y_column+" FROM "+tableName+" ORDER BY "+x_column);
 
         for (int i = 0; i < data.length; i++) {
-          data[i][0] = (Object)rs.getDouble(valid_columns.get(x_axis - 1));
-          data[i][1] = (Object)rs.getDouble(valid_columns.get(y_axis - 1));
+          data[i][0] = (Object)rs.getDouble(x_column);
+          data[i][1] = (Object)rs.getDouble(y_column);
           rs.next();
         }
 
@@ -83,11 +84,11 @@ public class DatabaseTools {
 
     }
 
-    public ArrayList<String> getPrimaryKeys(Connection conn, String tableName) throws SQLException {
+    public List<String> getPrimaryKeys(Connection conn, String tableName) throws SQLException {
 
         DatabaseMetaData dmd = conn.getMetaData();
         ResultSet set = dmd.getPrimaryKeys(null, null, tableName);
-        ArrayList<String> keys = new ArrayList<String>();
+        List<String> keys = new ArrayList<String>();
 
         while (set.next()) {
           String columnName = set.getString("COLUMN_NAME");
@@ -98,10 +99,11 @@ public class DatabaseTools {
 
     }
 
-    public ArrayList<String> getRelations(Connection conn, String tableName, ArrayList<String> tables) throws SQLException {
+    // Gets relations to the input table
+    public List<String> getRelations(Connection conn, String tableName, List<String> tables) throws SQLException {
 
-        ArrayList<String> keys = getPrimaryKeys(conn, tableName);
-        ArrayList<String> relations = new ArrayList<String>();
+        List<String> keys = getPrimaryKeys(conn, tableName);
+        List<String> relations = new ArrayList<String>();
         DatabaseMetaData dmd = conn.getMetaData();
 
         for (int i = 0; i < tables.size(); i++) {
@@ -123,11 +125,11 @@ public class DatabaseTools {
         return relations;
     }
 
-    public ArrayList<String> getTableForeignColumns(ArrayList<String> relations, Connection conn) throws SQLException {
+    public List<String> getTableForeignColumns(Connection conn, List<String> relations) throws SQLException {
 
         Statement statement = getStatement(conn);
 
-        ArrayList<String> foreignColumns = new ArrayList<String>();
+        List<String> foreignColumns = new ArrayList<String>();
 
         for (int i = 0; i < relations.size(); i++) {
           String table = relations.get(i);
@@ -150,7 +152,7 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getForeignData(Connection conn, ArrayList<String> foreignColumns, String tableName, int index) throws SQLException {
+    public Object[][] getForeignData(Connection conn, String tableName, String relationStatement) throws SQLException {
 
         Statement statement = getStatement(conn);
 
@@ -160,10 +162,10 @@ public class DatabaseTools {
         int count = rs2.getInt("total");
         data = new Object[count][2];
 
-        ArrayList<String> keys = getPrimaryKeys(conn, tableName);
+        List<String> keys = getPrimaryKeys(conn, tableName);
 
         // Executes correct query
-        ResultSet rs3 = statement.executeQuery("SELECT "+keys.get(0)+", "+foreignColumns.get(index).split(" ")[1]+" AS val FROM "+foreignColumns.get(index).split(" ")[0]+" GROUP BY "+keys.get(0));
+        ResultSet rs3 = statement.executeQuery("SELECT "+keys.get(0)+", "+relationStatement.split(" ")[1]+" AS val FROM "+relationStatement.split(" ")[0]+" GROUP BY "+keys.get(0));
         // Goes through every entry and enters it into data array
         for (int i = 0; i < data.length; i++) {
           data[i][0] = (Object)rs3.getString(keys.get(0));
@@ -175,7 +177,7 @@ public class DatabaseTools {
 
     }
 
-    public Object[][] getBarData(Connection conn, ArrayList<String> tableColumns, int index, String tableName) throws SQLException {
+    public Object[][] getBarData(Connection conn, String tableName, String y_column) throws SQLException {
 
         Statement statement = getStatement(conn);
 
@@ -185,14 +187,14 @@ public class DatabaseTools {
         int count = rs2.getInt("total");
         data = new Object[count][2];
 
-        ArrayList<String> keys = getPrimaryKeys(conn, tableName);
+        List<String> keys = getPrimaryKeys(conn, tableName);
 
         // Executes correct query
-        ResultSet rs3 = statement.executeQuery("SELECT "+keys.get(0)+", "+tableColumns.get(index)+" FROM "+tableName);
+        ResultSet rs3 = statement.executeQuery("SELECT "+keys.get(0)+", "+y_column+" FROM "+tableName);
         // Goes through every entry and enters it into data array
         for (int i = 0; i < data.length; i++) {
           data[i][0] = (Object)rs3.getString(keys.get(0));
-          data[i][1] = (Object)rs3.getDouble(tableColumns.get(index));
+          data[i][1] = (Object)rs3.getDouble(y_column);
           rs3.next();
         }
 
